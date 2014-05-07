@@ -1,0 +1,112 @@
+<div xmlns="http://www.w3.org/1999/xhtml" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xf="http://www.w3.org/2002/xforms" data-template="templates:surround" data-template-with="templates/page.html" data-template-at="content" data-template-options="noscript=yes">
+    <xf:model>
+        <xf:instance xmlns="" id="all">
+            <recordings/>
+        </xf:instance>
+        <xf:instance xmlns="" id="template">
+            <recording>
+                <dc:title/>
+            </recording>
+        </xf:instance>
+        <xf:instance xmlns="" id="search">
+            <parameters>
+                <query/>
+                <field>name</field>
+            </parameters>
+        </xf:instance>
+        <!-- 
+            $restxq contains the restxq endpoint, usually /exist/restxq on a default instance.
+            It is set as an URL parameter by the controller.
+            While it could be hardcoded, we want to make sure it always works if the context changes, e.g. to
+            /exist-test/restxq.
+        -->
+        <xf:bind id="recording-id" nodeset="//recording/@id" relevant="true()"/>
+        <xf:submission id="load" resource="{$restxq}/recording" method="get" replace="instance">
+            <xf:message ev:event="xforms-submit-done" level="ephemeral">Recording list loaded.</xf:message>
+        </xf:submission>
+        <xf:submission id="save" resource="{$restxq}recording" method="put" replace="instance" ref="//recording[index('recording-repeat')]">
+            <xf:message ev:event="xforms-submit-done" level="ephemeral">Recording saved.</xf:message>
+            <xf:message ev:event="xforms-submit-error" level="ephemeral">An error occurred.</xf:message>
+        </xf:submission>
+        <xf:submission id="delete" resource="{$restxq}recording/{instance('all')//recording[index('recording-repeat')]/@id}" method="delete" replace="instance">
+            <xf:message ev:event="xforms-submit-done" level="ephemeral">Recording deleted.</xf:message>
+            <xf:message ev:event="xforms-submit-error" level="ephemeral">An error occurred.</xf:message>
+        </xf:submission>
+        <xf:submission id="search" resource="{$restxq}search" method="get" serialization="application/x-www-form-urlencoded" ref="instance('search')" targetref="instance('all')" replace="instance"/>
+        <xf:action ev:event="xforms-ready">
+            <xf:send submission="load"/>
+        </xf:action>
+    </xf:model>
+    <div class="row-fluid">
+        <div id="content" class="span8">
+            <div class="page-header">
+                <h1>Métadonnées des enregistrements sonores</h1>
+            </div>
+            <h2>Liste des métadonnées</h2>
+            <table>
+                <tr>
+                    <td>
+                        <xf:select1 ref="instance('search')/field">
+                            <xf:label/>
+                            <xf:item>
+                                <xf:label>Title</xf:label>
+                                <xf:value>Title</xf:value>
+                            </xf:item>
+                        </xf:select1>
+                    </td>
+                    <td>
+                        <xf:input class="search" ref="instance('search')/query" incremental="true">
+                            <xf:label/>
+                            <xf:hint>Filtrer les enregistrements en saisissant les lettres du titre, d'un auteur, d'un locuteur...</xf:hint>
+                            <xf:send submission="search" ev:event="xforms-value-changed"/>
+                        </xf:input>
+                    </td>
+                    <td>
+                        <xf:trigger class="search">
+                            <xf:label>Clear</xf:label>
+                            <xf:action>
+                                <xf:setvalue ref="instance('search')/query"/>
+                            </xf:action>
+                        </xf:trigger>
+                    </td>
+                </tr>
+            </table>
+            <table class="recordings">
+                <thead>
+                    <th>Titre</th>
+                </thead>
+                <tbody id="recording-repeat" xf:repeat-nodeset="//recording">
+                    <tr>
+                        <td>
+                            <xf:output ref="dc:title"/>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <xf:group appearance="minimal" class="action-buttons">
+                <xf:submit submission="delete">
+                    <xf:label>Delete</xf:label>
+                </xf:submit>
+                <xf:trigger>
+                    <xf:label>New</xf:label>
+                    <xf:action>
+                        <xf:insert nodeset="//recording" at="last()" position="after" origin="instance('template')"/>
+                    </xf:action>
+                </xf:trigger>
+            </xf:group>
+            <xf:group ref="//recording[index('recording-repeat')]" appearance="full" class="edit">
+                <xf:input ref="dc:title">
+                    <xf:label>Titre:</xf:label>
+                </xf:input>
+            </xf:group>
+            <xf:submit submission="save">
+                <xf:label>Save</xf:label>
+            </xf:submit>
+        </div>
+        <div class="span4">
+            <div class="well">
+                <p>Youpala</p>
+            </div>
+        </div>
+    </div>
+</div>
